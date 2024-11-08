@@ -1,0 +1,133 @@
+:root {
+  --color: #eceff4;
+  --bg-color: #2d3342;
+  --user-bg-color: rgb(36, 41, 51);
+  --bot-bg-color: #192431;
+  --primary-color: #3f5c7d;
+  --font: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  color: var(--color);
+  background-color: var(--bg-color);
+  font-size: 20px;
+  font-family: var(--font);
+}
+
+@media (max-width:600px) {
+  body {
+    font-size: 18px
+  }
+}
+
+@media (max-width:400px) {
+  body {
+    font-size: 16px
+  }
+}
+
+main {
+  margin: auto;
+  width: 90%;
+  max-width: 1200px;
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+#chat {
+  width: 100%;
+  display: grid;
+}
+
+#chat .user {
+  text-align: right;
+}
+
+#chat .bot {
+  text-align: left;
+}
+
+#chat .user div,
+#chat .bot div {
+  display: inline-block;
+  background-color: var(--user-bg-color);
+  padding: 0.5em;
+  border-radius: 0.5em;
+  max-width: 90%;
+  margin-top: 0.5em;
+  text-align: left;
+}
+
+#chat .bot div {
+  background-color: var(--bot-bg-color);
+}
+
+textarea {
+  width: 100%;
+  background-color: var(--user-bg-color);
+  color: inherit;
+  font-size: inherit;
+  font-family: inherit;
+  border: none;
+  margin-top: 1em;
+  resize: vertical;
+  border-bottom: solid 1px var(--color);
+  padding: 0.3em;
+  padding-bottom: 0.1em;
+}
+
+textarea:focus {
+  border: none;
+}
+
+.loader circle {
+  animation: blink 1.2s infinite;
+}
+
+.loader circle:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.loader circle:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/** index.html */
+
+form {
+  margin: auto;
+  text-align: center;
+}
+
+form * {
+  margin-top: 15px;
+  font-size: inherit;
+}
+
+form select {
+  font: inherit;
+  padding: .7em 1em .5em 1em;
+}
+
+form input[type=submit],
+button {
+  border: none;
+  background-color: var(--primary-color);
+  color: inherit;
+  padding: 0.5em 1em;
+  border-radius: 0.3em;
+  cursor: pointer;
+}
+
+button#save {
+  position: fixed;
+  top: .5em;
+  right: .5em;
+}

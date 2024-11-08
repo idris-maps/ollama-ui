@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama</title>
+    <link href="/style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <main>
+      <h1>Ollama</h1>
+      <form style="display:none" method="get" action="/chat">
+        <label for="model">Choose a model</label>
+        <br />
+        <select name="model"></select>
+        <br />
+        <input type="submit" value="Start chatting" />
+      </form>
+    </main>
+    <script>
+window.addEventListener("load", async () => {
+  const res = await fetch("/models");
+  const models = (await res.json()).map((d) => d.name);
+
+  const select = document.getElementsByTagName("select")[0];
+  const form = document.getElementsByTagName("form")[0];
+
+  select.innerHTML = models.map((d) =>
+    `<option value="${d}">${
+      d.endsWith(":latest") ? d.slice(0, -7) : d
+    }</option>`
+  );
+  form.style.display = "block";
+});
+    </script>
+  </body>
+</html>

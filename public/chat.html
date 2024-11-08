@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link href="/style.css" rel="stylesheet" />
+  </head>
+  <body>
+    <main>
+      <div id="chat"></div>
+      <textarea id="chat-input" rows="1"></textarea>
+    </main>
+    <button id="save">Save</button>
+    <script>
+const initConversation = async (model) => {
+  const url = `ws://${new URL(window.location).host}`;
+  const start = () =>
+    new Promise((resolve) => {
+      const socket = new WebSocket(url);
+      const id = crypto.randomUUID();
+      socket.addEventListener("open", () => {
+        socket.send(JSON.stringify({ action: "start", id, model }));
+        resolve({ socket, id });
+      });
+    });
+
+  const { socket, id } = await start();
+  let listeners = [];
+
+  socket.addEventListener("message", (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.action === "answer") {
+        listeners.forEach((listener) => {
+          listener(msg.response, msg.done);
+        });
+      }
+    } catch {
+      return;
+    }
+  });
+
+  const listen = (listener) => {
+    listeners.push(listener);
+  };
+
+  const ask = (prompt) => {
+    socket.send(JSON.stringify({ action: "question", prompt, id }));
+  };
+
+  const stop = () => {
+    socket.send(JSON.stringify({ action: "end", id }));
+    listeners = [];
+    socket.close();
+  };
+
+  return { ask, stop, listen };
+};
+
+const initInput = () => {
+  const el = document.getElementsByTagName("textarea")[0];
+  let shiftIsDown = false;
+  let listeners = [];
+
+  const resize = () => {
+    el.style.height = "5px";
+    el.style.height = (el.scrollHeight) + "px";
+  };
+
+  el.addEventListener("input", resize);
+
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Shift") {
+      shiftIsDown = true;
+    }
+  });
+
+  el.addEventListener("keyup", (e) => {
+    if (e.key === "Shift") {
+      shiftIsDown = false;
+    }
+    if (e.key === "Enter" && !shiftIsDown && el.value.trim() !== "") {
+      listeners.forEach((listener) => {
+        listener(el.value);
+      });
+      el.value = "";
+    }
+  });
+
+  const show = () => {
+    el.style.display = "block";
+    resize();
+    window.scrollTo(0, document.body.scrollHeight);
+    el.focus();
+  };
+
+  const hide = () => {
+    el.style.display = "none";
+  };
+
+  const listen = (listener) => {
+    listeners.push(listener);
+  };
+
+  show();
+  return { show, hide, listen };
+};
+
+const initChat = () => {
+  const el = document.getElementById("chat");
+  let currentAnswer;
+
+  const appendMessage = (parent, message, user, withLoader) => {
+    const p = document.createElement("div");
+    p.innerHTML = message.replaceAll("\n", "<br/>");
+    const div = document.createElement("div");
+    div.setAttribute("class", user);
+    parent.appendChild(div);
+    div.appendChild(p);
+    if (withLoader) {
+      p.innerHTML = `
+        <svg viewBox="0 0 60 30" class="loader" fill="currentColor" style="width:2em;position:relative;top:0.15em;">
+          <circle cx="10" cy="15" r="8"></circle>
+          <circle cx="30" cy="15" r="8"></circle>
+          <circle cx="50" cy="15" r="8"></circle>
+        </svg>
+      `;
+    }
+    window.scrollTo(0, document.body.scrollHeight);
+    return p;
+  };
+
+  const onQuestion = (question) => {
+    appendMessage(el, question, "user");
+    currentAnswer = appendMessage(el, "", "bot", true);
+  };
+
+  const onAnswer = (part, done) => {
+    const loader = currentAnswer.getElementsByClassName("loader")[0];
+    if (loader) {
+      currentAnswer.removeChild(loader);
+    }
+    currentAnswer.innerHTML = (currentAnswer.innerHTML || "") +
+      part.replaceAll("\n", "<br/>");
+    window.scrollTo(0, document.body.scrollHeight);
+    if (done) {
+      currentAnswer = undefined;
+    }
+  };
+
+  return { onQuestion, onAnswer };
+};
+
+const saveConversation = () => {
+  const chat = Array.from(document.querySelector("#chat").children)
+    .map(
+      (d) => [
+        d.classList[0],
+        d.children[0]?.innerHTML.replaceAll("<br>", "\n\n"),
+      ],
+    )
+    .filter(([a, b]) => Boolean(a && b))
+    .map(([user, msg]) => `**` + user + "**\n\n" + msg + "\n\n")
+    .join("");
+
+  const cleanChat = (chat) => {
+    const keep = [];
+    let isCode = false;
+    chat.split("\n").forEach((d, i, arr) => {
+      if (d.includes("```")) isCode = !isCode;
+      const prev = arr[i - 1];
+      const skip = prev?.trim() === "" && d.trim() === "";
+      if (!skip) keep.push(isCode ? d : d.trim());
+    });
+    return keep.join("\n");
+  };
+
+  const a = document.createElement("a");
+  const url = URL.createObjectURL(
+    new Blob([cleanChat(chat)], { type: "text/markdown" }),
+  );
+  a.href = url;
+  a.download =
+    (new URLSearchParams(window.location.search).get("model") || "chat") + "_" +
+    new Date().toISOString() + ".md";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 0);
+};
+
+window.onload = async () => {
+  const model = new URLSearchParams(window.location.search).get("model");
+  const conversation = await initConversation(model);
+
+  const input = initInput();
+  const chat = initChat();
+
+  input.listen((question) => {
+    chat.onQuestion(question);
+    conversation.ask(question);
+    input.hide();
+  });
+
+  conversation.listen((part, done) => {
+    chat.onAnswer(part, done);
+    if (done) {
+      input.show();
+    }
+  });
+
+  window.onbeforeunload = () => {
+    conversation.stop();
+  };
+
+  document.getElementById("save").onclick = saveConversation;
+};
+    </script>
+  </body>
+</html>
