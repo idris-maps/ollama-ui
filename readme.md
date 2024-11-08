@@ -26,3 +26,9 @@ example:
 ```
 deno run --allow-net --allow-read serve.ts --system="Answer like a drunk cowboy" --baseUrl=https://my-server.com
 ```
+
+## screenshots
+
+![index-page]('./ollama-ui-index.png')
+
+![chat-page]('./ollama-ui-chat.png')
