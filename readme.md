@@ -29,6 +29,6 @@ deno run --allow-net --allow-read serve.ts --system="Answer like a drunk cowboy"
 
 ## screenshots
 
-![index-page]('./ollama-ui-index.png')
+<img src="ollama-ui-index.png" />
 
-![chat-page]('./ollama-ui-chat.png')
+<img src="ollama-ui-chat.png" />
